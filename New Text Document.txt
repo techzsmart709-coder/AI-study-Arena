@@ -1,0 +1,107 @@
+@echo off
+setlocal enabledelayedexpansion
+
+set REPO_URL=https://github.com/techzsmart709-coder/AI-study-Arena.git
+set SCRIPT_NAME="study.bat"
+
+echo.
+echo ===== 🧠 SMART AI GITHUB UPLOADER =====
+echo.
+
+cd /d "%~dp0"
+
+:: ==============================
+:: CHECK GIT
+:: ==============================
+git --version >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [ERROR] Git not installed
+    echo Download: https://git-scm.com
+    pause
+    exit /b
+)
+
+git config --global user.name "techzsmart709-coder"
+git config --global user.email "techzsmart709@gmail.com"
+
+:: ==============================
+:: CREATE .gitignore IF NOT EXISTS
+:: ==============================
+if not exist ".gitignore" (
+    echo Creating .gitignore...
+    (
+        echo %SCRIPT_NAME%
+        echo pycache/
+        echo *.log
+        echo *.tmp
+        echo node_modules/
+        echo .env
+        echo INSTALL_ARENA.bat
+        echo *.zip
+        echo *.rar
+        echo *.mp4
+        echo *.bin
+    ) > .gitignore
+)
+
+:: ==============================
+:: INIT REPO
+:: ==============================
+if not exist ".git" (
+    echo Initializing repository...
+    git init
+    git branch -M main
+    git remote add origin %REPO_URL%
+)
+
+:: ==============================
+:: PERFORMANCE BOOST
+:: ==============================
+git config core.preloadindex true
+git config core.fscache true
+git config gc.auto 256
+
+:: ==============================
+:: CHECK LARGE FILES (>100MB)
+:: ==============================
+echo Scanning for large files...
+for /r %%F in (*) do (
+    if %%~zF GTR 100000000 (
+        echo [WARNING] Large file detected: %%F
+    )
+)
+
+:: ==============================
+:: ADD FILES
+:: ==============================
+echo Adding files...
+git add .
+
+:: Remove this script from staging (extra safety)
+git reset %SCRIPT_NAME% >nul 2>&1
+
+:: ==============================
+:: SMART COMMIT
+:: ==============================
+git diff --cached --quiet
+if %errorlevel% neq 0 (
+    for /f %%i in ('git diff --cached --name-only ^| find /c /v ""') do set COUNT=%%i
+    set msg=Updated !COUNT! files - %date% %time%
+    echo Committing !COUNT! changes...
+    git commit -m "!msg!"
+) else (
+    echo [INFO] No new changes to commit, proceeding with force-sync.
+)
+
+:: ==============================
+:: PUSH (FORCE ENABLED)
+:: ==============================
+echo Uploading to GitHub...
+git push -u origin main --force
+
+:END
+echo.
+echo ===== 🚀 DONE (MODIFIED) =====
+echo.
+
+pause
